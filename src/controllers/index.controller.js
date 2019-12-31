@@ -84,15 +84,15 @@ const getEpicrisisHospitalizados = async (req, res) => {
                 type    =   element.Type;
                 traits_name = '';
                 traits_score = null;
-                console.log('Entities id ' + id_entities);
-                console.log('Texto ' + text);
+                // console.log('Entities id ' + id_entities);
+                // console.log('Texto ' + text);
                 
                 if(element.Traits != ''){
                     element['Traits'].forEach(Trai => {
                         traits_name  =  Trai.Name;
                         traits_score = Trai.Score;
-                        console.log('Traits Texto ' + traits_name + "\n");
-                        console.log('Traits Score ' + traits_score + "\n");
+                        // console.log('Traits Texto ' + traits_name + "\n");
+                        // console.log('Traits Score ' + traits_score + "\n");
                     });  
                 }
                 //
@@ -105,27 +105,33 @@ const getEpicrisisHospitalizados = async (req, res) => {
             });
 
             // esto lo usare para guardarlo en la tabla epicrisis_hospitalizados_unmapped_attributes
-            // if(data['UnmappedAttributes']){
-            //     data['UnmappedAttributes'].forEach(UnmappedAttributes => {
-            //         unmapped_attributes_type = UnmappedAttributes.type;
-            //         if(UnmappedAttributes.Attribute != ''){
-            //             UnmappedAttributes.Attribute['Attribute'].forEach(Attribute => {
-            //                 unmapped_attributes_type2 = UnmappedAttributes.;
-            //                 unmapped_attributes_score = ;
-            //                 unmapped_attributes_id = ;
-            //                 unmapped_attributes_beginoffset = ;
-            //                 unmapped_attributes_endoffset = ;
-            //                 unmapped_attributes_text = ;
-            //                 unmapped_attributes_traitsname = ;
-            //                 unmapped_attributes_traitsscore = ;
-            //                 console.log('Traits Texto ' + TraitsName + "\n");
-            //                 console.log('Traits Score ' + TraitsScore + "\n");
-            //             });  
-            //         }
+            if(data['UnmappedAttributes']){
+                data['UnmappedAttributes'].forEach(UnmappedAttributes => {
+                    unmapped_attributes_type = UnmappedAttributes.Type;
+                    if(UnmappedAttributes.Attribute != ''){
+                        unmapped_attributes_type2 = UnmappedAttributes.Attribute.Type;
+                        unmapped_attributes_score = UnmappedAttributes.Attribute.Score;
+                        unmapped_attributes_id = UnmappedAttributes.Attribute.Id;
+                        unmapped_attributes_beginoffset = UnmappedAttributes.Attribute.BeginOffset;
+                        unmapped_attributes_endoffset = UnmappedAttributes.Attribute.EndOffset;
+                        unmapped_attributes_text = UnmappedAttributes.Attribute.Text;
+                        unmapped_attributes_traitsname = '';
+                        unmapped_attributes_traitsscore = null;
+                        if(UnmappedAttributes.Attribute.Traits != ''){
+                            UnmappedAttributes.Attribute.Traits.forEach(UATrai => {
+                                unmapped_attributes_traitsname  =  UATrai.Name;
+                                unmapped_attributes_traitsscore = UATrai.Score;
+                                // console.log('UATraits Texto ' + unmapped_attributes_traitsname + "\n");
+                                // console.log('UATraits Score ' + unmapped_attributes_traitsscore + "\n");
+                            });  
+                        }
+                        
+                    }
                     
-            //         console.log(element)
-            //     });
-            // }
+                    var response =  pool.query('INSERT INTO epicrisis_hospitalizados_unmapped_attributes (id_epicrisis_hospitalizados, unmapped_attributes_type, unmapped_attributes_type2, unmapped_attributes_score, unmapped_attributes_id, unmapped_attributes_beginoffset, unmapped_attributes_endoffset, unmapped_attributes_text, unmapped_attributes_traitsname, unmapped_attributes_traitsscore  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)', [id_epicrisis_hospitalizados, unmapped_attributes_type, unmapped_attributes_type2, unmapped_attributes_score, unmapped_attributes_id, unmapped_attributes_beginoffset, unmapped_attributes_endoffset, unmapped_attributes_text , unmapped_attributes_traitsname, unmapped_attributes_traitsscore ]);
+                    console.log("\n" + ' Datos insertados' + "\n");
+                });
+            }
 
         }
 
