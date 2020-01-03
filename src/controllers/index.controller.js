@@ -41,18 +41,16 @@ const getEpicrisisHospitalizadosByHospId = async(req, res) => {
     {
         //si ha sido verificado por el doctor
         if(response.rows[0].doc_id > 0){
-            var id_epicrisis_hospitalizados = response.rows[0].epicrisis_id;
-            var responseEntities = await pool.query('SELECT * FROM epicrisis_hospitalizados_entities  WHERE id_epicrisis_hospitalizados = $1', [id_epicrisis_hospitalizados])
-            var responseUnmappedAttributes = await pool.query('SELECT * FROM epicrisis_hospitalizados_unmapped_attributes WHERE id_epicrisis_hospitalizados = $1', [id_epicrisis_hospitalizados])
+            const id_epicrisis_hospitalizados = response.rows[0].epicrisis_id;
+            
+            const responseEntities = await pool.query('SELECT * FROM epicrisis_hospitalizados_entities  WHERE id_epicrisis_hospitalizados = $1', [id_epicrisis_hospitalizados])
+            const responseUnmappedAttributes = await pool.query('SELECT * FROM epicrisis_hospitalizados_unmapped_attributes WHERE id_epicrisis_hospitalizados = $1', [id_epicrisis_hospitalizados])
+            console.log(responseEntities.rows)
             response.rows[0].epicrisis_resumen = utf8.decode(response.rows[0].epicrisis_resumen)
             res.json(
                     {
-                        Respuesta:response.rows
-                    },
-                    {
-                        Entities: responseEntities.rows
-                    },
-                    {
+                        Respuesta:response.rows,
+                        Entities: responseEntities.rows,
                         UnmappedAttributes: responseUnmappedAttributes.rows
                     }
                 );
