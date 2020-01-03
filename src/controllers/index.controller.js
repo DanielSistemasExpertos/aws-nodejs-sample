@@ -129,21 +129,6 @@ const creaEHdetectEntities = async (req, res) => {
                 ]
                     );
                 return;
-                res.send('Ya existe esta entidad' + "<br>" +
-                "<b> epicrisis C:C </b>" + hosp_id + "<br>" +
-                "<b> epicrisis resumen </b>" + epicrisis_resumen + "<br>" +
-                "<b> id entities </b>" + responseEntities.rows[0].id_entities + "<br>" +
-                "<b> beging offset </b>" + responseEntities.rows[0].begin_offset + "<br>" +
-                "<b> end offset </b>" + responseEntities.rows[0].end_offset + "<br>" +
-                "<b> score </b>" + responseEntities.rows[0].score + "<br>" +
-                "<b> text </b>" + responseEntities.rows[0].text + "<br>" +
-                "<b> category </b>" + responseEntities.rows[0].category + "<br>" +
-                "<b> type </b>" + responseEntities.rows[0].type + "<br>" +
-                "<b> traits name </b>" + responseEntities.rows[0].traits_name + "<br>" +
-                "<b> traits score </b>" + responseEntities.rows[0].traits_score + "<br>" +
-                "<b> id epicrisis hospitalizados </b>" + responseEntities.rows[0].id_epicrisis_hospitalizados);
-                
-                return;
             }else{
                 // analizo el texto y inserto la entidad
                 // console.log(response.rows[0].hosp_id+ '\n');
@@ -168,8 +153,21 @@ const creaEHdetectEntities = async (req, res) => {
                     var text = '';
                     var category = '';
                     var type = '';
+                    // Traits[]
                     var traits_name = '';
-                    var traits_score = '';
+                    var traits_score = null;
+
+                    // Attributes []
+                    var Attributes_Type = '';
+                    var Attributes_Score = null;
+                    var Attribute_RelationshipScore = null;
+                    var Attribute_Id = null;
+                    var Attribute_BeginOffset = null;
+                    var Attribute_EndOffset = null;
+                    var Attribute_Text = '';
+                    var A_traits_name  =  '';
+                    var A_traits_score = null;
+
                     // UnmappedAttributes
                     var unmapped_attributes_type = '';
                     var unmapped_attributes_type2 = '';
@@ -195,8 +193,6 @@ const creaEHdetectEntities = async (req, res) => {
                             type    =   element.Type;
                             traits_name = '';
                             traits_score = null;
-                            // console.log('Entities id ' + id_entities);
-                            // console.log('Texto ' + text);
                             
                             if(element.Traits != ''){
                                 element['Traits'].forEach(Trai => {
@@ -206,9 +202,32 @@ const creaEHdetectEntities = async (req, res) => {
                                     // console.log('Traits Score ' + traits_score + "\n");
                                 });  
                             }
+                            // Attributes: [] de Entities: []
+                            if(typeof element.Attributes !== 'undefined' && element.Attributes != ''){
+                                element['Attributes'].forEach(Attribute => {
+                                    Attributes_Type  =  Attribute.Type;
+                                    Attributes_Score = Attribute.Score;
+                                    Attribute_RelationshipScore = Attribute.RelationshipScore;
+                                    Attribute_Id = Attribute.Id;
+                                    Attribute_BeginOffset = Attribute.BeginOffset;
+                                    Attribute_EndOffset = Attribute.EndOffset;
+                                    Attribute_Text = Attribute.Text;
+
+                                    // Traits: [ ] de Attributes: []
+                                    if(Attribute.Traits != ''){
+                                        Attribute['Traits'].forEach(Trai => {
+                                            A_traits_name  =  Trai.Name;
+                                            A_traits_score = Trai.Score;
+                                        });  
+                                    }
+                                });  
+                            }
                             //
                             // guardo los datos en la tabla
-                                var response =  pool.query('INSERT INTO epicrisis_hospitalizados_entities (id_entities, begin_offset, end_offset, score, text, category, type, traits_name, traits_score, id_epicrisis_hospitalizados  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)', [id_entities, begin_offset, end_offset, score, text, category, type, traits_name, traits_score, id_epicrisis_hospitalizados ]);
+                                var response =  pool.query('INSERT INTO epicrisis_hospitalizados_entities (id_entities, begin_offset, end_offset, score, text, category, type, traits_name, traits_score, id_epicrisis_hospitalizados, attributes_type, attributes_score, attribute_relationshipscore, attribute_id, attribute_beginoffset, attribute_endoffset, attribute_text, a_traits_name, a_traits_score  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)',
+                                 [id_entities, begin_offset, end_offset, score, text, category, type, traits_name, traits_score, id_epicrisis_hospitalizados,
+                                    Attributes_Type, Attributes_Score, Attribute_RelationshipScore, Attribute_Id, Attribute_BeginOffset, Attribute_EndOffset, 
+                                    Attribute_Text, A_traits_name, A_traits_score ]);
                                 console.log("\n" + ' Datos insertados' + "\n");
                             
                             
