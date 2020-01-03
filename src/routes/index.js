@@ -13,8 +13,6 @@ router.get('/getEpicrisisHospitalizadosByHospId/:hosp_id', getEpicrisisHospitali
 //ruta para obtener datos de los pacientes en la tabla epicrisis_hospitalizados, analizarlos y insertarlos
 router.get('/creaEHdetectEntities/:hosp_id', creaEHdetectEntities);
 
-//metodo para obtener los datos insertados con creaEHdetectEntitiesV2
-// router.post('/getDetectEntities', getDetectEntities);
 
 
 module.exports = router;
