@@ -19,6 +19,7 @@
   "homepage": "https://github.com/DanielSistemasExpertos/aws-nodejs-sample#readme",
   "dependencies": {
     "aws-sdk": "^2.596.0",
+    "ejs": "^3.0.1",
     "express": "^4.17.1",
     "pg": "^7.16.0",
     "utf8": "^3.0.0"
