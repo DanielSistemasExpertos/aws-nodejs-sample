@@ -24,6 +24,12 @@ const comprehendmedical = new AWS.ComprehendMedical({
     region: 'us-east-1',
     LanguageCode: 'es',
 });
+
+const translate = new AWS.Translate({
+    accessKeyId: ID,
+    secretAccessKey: SECRET,
+    region: 'us-east-1',
+});
  
 
 //metodo para obtener datos de tabla epicrisis_hospitalizados
@@ -103,6 +109,7 @@ const creaEHdetectEntities = async (req, res) => {
         if(response.rows[0].doc_id > 0){
             var id_epicrisis_hospitalizados = response.rows[0].epicrisis_id;
             var epicrisis_resumen = utf8.decode(response.rows[0].epicrisis_resumen);
+
             var responseEntities = await pool.query('SELECT * FROM epicrisis_hospitalizados_entities  WHERE id_epicrisis_hospitalizados = $1', [id_epicrisis_hospitalizados])
             var responseUnmappedAttributes = await pool.query('SELECT * FROM epicrisis_hospitalizados_unmapped_attributes WHERE id_epicrisis_hospitalizados = $1', [id_epicrisis_hospitalizados])
             
@@ -130,142 +137,173 @@ const creaEHdetectEntities = async (req, res) => {
                     );
                 return;
             }else{
-                // analizo el texto y inserto la entidad
-                // console.log(response.rows[0].hosp_id+ '\n');
-                // console.log(response.rows[0].epicrisis_resumen);
-                // return;
-                const params = {
-                    Text: JSON.stringify(epicrisis_resumen)
+                var dataTraducida = '';
+                ////////////// traducir de es a en ////////////////////////////
+                var paramsTraducir = {
+                    Text: epicrisis_resumen,
+                    SourceLanguageCode: 'es',
+                    TargetLanguageCode: 'en'
                 };
 
-                // https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/ComprehendMedical.html#detectEntitiesV2-property
-                // Detectar entidades
-                // Use la operación DetectEntities para detectar las entidades médicas en su texto. Detecta entidades en las siguientes categorías:
-                // ANATOMY, MEDICAL_CONDITION, MEDICATION, PROTECTED_HEALTH_INFORMATION, TEST_TREATMENT_PROCEDURE
-                comprehendmedical.detectEntitiesV2
-                (params, function (err, data) {
-                    if (err) console.log(err, err.stack); // an error occurred
-                    // else     console.log(data);           // successful response
-                    var id_entities = '';
-                    var begin_offset = '';
-                    var end_offset = '';
-                    var score = '';
-                    var text = '';
-                    var category = '';
-                    var type = '';
-                    // Traits[]
-                    var traits_name = '';
-                    var traits_score = null;
+                translate.translateText(paramsTraducir, function(errTra, dataTra) {
+                    if (errTra) {
+                        console.log(errTra, errTra.stack);
+                        alert("Error al llamar Amazon Translate. " + errTra.message);
+                        return;
+                    }
+                    //si se traduce el epicrisis lo envio a analizar con comprehend
+                    if (dataTra) {
+                        dataTraducida = dataTra.TranslatedText;
+                        
+                        if(dataTraducida){
+                            ///////////////////////////// analizar con comprehend medical ///////////////////
+                        const params = {
+                            Text: dataTraducida
+                            // Text: JSON.stringify(epicrisis_resumen)
+                        };
+                        console.log('data traducida ' + dataTraducida);
+                        
+                        // res.json(dataTraducida);
+                        // return;
 
-                    // Attributes []
-                    var Attributes_Type = '';
-                    var Attributes_Score = null;
-                    var Attribute_RelationshipScore = null;
-                    var Attribute_Id = null;
-                    var Attribute_BeginOffset = null;
-                    var Attribute_EndOffset = null;
-                    var Attribute_Text = '';
-                    var A_traits_name  =  '';
-                    var A_traits_score = null;
-
-                    // UnmappedAttributes
-                    var unmapped_attributes_type = '';
-                    var unmapped_attributes_type2 = '';
-                    var unmapped_attributes_score = '';
-                    var unmapped_attributes_id = '';
-                    var unmapped_attributes_beginoffset = '';
-                    var unmapped_attributes_endoffset = '';
-                    var unmapped_attributes_text = '';
-                    var unmapped_attributes_traitsname = '';
-                    var unmapped_attributes_traitsscore = '';
-                    if(data){
-                        res.status(200).json(data);
-
-                        // recorro el objeto
-                        data['Entities'].forEach(element => {
+                        // https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/ComprehendMedical.html#detectEntitiesV2-property
+                        // Detectar entidades
+                        // Use la operación DetectEntities para detectar las entidades médicas en su texto. Detecta entidades en las siguientes categorías:
+                        // ANATOMY, MEDICAL_CONDITION, MEDICATION, PROTECTED_HEALTH_INFORMATION, TEST_TREATMENT_PROCEDURE
+                        comprehendmedical.detectEntitiesV2
+                        (params, function (err, data) {
+                            if (err) console.log(err, err.stack); // an error occurred
+                            // else     console.log(data);           // successful response
+                            var id_entities = '';
+                            var begin_offset = '';
+                            var end_offset = '';
+                            var score = '';
+                            var text = '';
+                            var category = '';
+                            var type = '';
+                            // Traits[]
+                            var traits_name = '';
+                            var traits_score = null;
                             
-                            id_entities = element.Id;
-                            begin_offset = element.BeginOffset;
-                            end_offset = element.EndOffset;
-                            score   =   element.Score;
-                            text    =   element.Text;
-                            category    =   element.Category;
-                            type    =   element.Type;
-                            traits_name = '';
-                            traits_score = null;
+                            // Attributes []
+                            var Attributes_Type = '';
+                            var Attributes_Score = null;
+                            var Attribute_RelationshipScore = null;
+                            var Attribute_Id = null;
+                            var Attribute_BeginOffset = null;
+                            var Attribute_EndOffset = null;
+                            var Attribute_Text = '';
+                            var A_traits_name  =  '';
+                            var A_traits_score = null;
                             
-                            if(element.Traits != ''){
-                                element['Traits'].forEach(Trai => {
-                                    traits_name  =  Trai.Name;
-                                    traits_score = Trai.Score;
-                                    // console.log('Traits Texto ' + traits_name + "\n");
-                                    // console.log('Traits Score ' + traits_score + "\n");
-                                });  
-                            }
-                            // Attributes: [] de Entities: []
-                            if(typeof element.Attributes !== 'undefined' && element.Attributes != ''){
-                                element['Attributes'].forEach(Attribute => {
-                                    Attributes_Type  =  Attribute.Type;
-                                    Attributes_Score = Attribute.Score;
-                                    Attribute_RelationshipScore = Attribute.RelationshipScore;
-                                    Attribute_Id = Attribute.Id;
-                                    Attribute_BeginOffset = Attribute.BeginOffset;
-                                    Attribute_EndOffset = Attribute.EndOffset;
-                                    Attribute_Text = Attribute.Text;
+                            // UnmappedAttributes
+                            var unmapped_attributes_type = '';
+                            var unmapped_attributes_type2 = '';
+                            var unmapped_attributes_score = '';
+                            var unmapped_attributes_id = '';
+                            var unmapped_attributes_beginoffset = '';
+                            var unmapped_attributes_endoffset = '';
+                            var unmapped_attributes_text = '';
+                            var unmapped_attributes_traitsname = '';
+                            var unmapped_attributes_traitsscore = '';
+                            if(data){
+                                
+                                res.status(200).json(data);
 
-                                    // Traits: [ ] de Attributes: []
-                                    if(Attribute.Traits != ''){
-                                        Attribute['Traits'].forEach(Trai => {
-                                            A_traits_name  =  Trai.Name;
-                                            A_traits_score = Trai.Score;
+                                // recorro el objeto
+                                data['Entities'].forEach(element => {
+                                    
+                                    id_entities = element.Id;
+                                    begin_offset = element.BeginOffset;
+                                    end_offset = element.EndOffset;
+                                    score   =   element.Score;
+                                    text    =   element.Text;
+                                    category    =   element.Category;
+                                    type    =   element.Type;
+                                    traits_name = '';
+                                    traits_score = null;
+                                    
+                                    if(element.Traits != ''){
+                                        element['Traits'].forEach(Trai => {
+                                            traits_name  =  Trai.Name;
+                                            traits_score = Trai.Score;
+                                            // console.log('Traits Texto ' + traits_name + "\n");
+                                            // console.log('Traits Score ' + traits_score + "\n");
                                         });  
                                     }
-                                });  
-                            }
-                            //
-                            // guardo los datos en la tabla
-                                var response =  pool.query('INSERT INTO epicrisis_hospitalizados_entities (id_entities, begin_offset, end_offset, score, text, category, type, traits_name, traits_score, id_epicrisis_hospitalizados, attributes_type, attributes_score, attribute_relationshipscore, attribute_id, attribute_beginoffset, attribute_endoffset, attribute_text, a_traits_name, a_traits_score  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)',
-                                 [id_entities, begin_offset, end_offset, score, text, category, type, traits_name, traits_score, id_epicrisis_hospitalizados,
-                                    Attributes_Type, Attributes_Score, Attribute_RelationshipScore, Attribute_Id, Attribute_BeginOffset, Attribute_EndOffset, 
-                                    Attribute_Text, A_traits_name, A_traits_score ]);
-                                console.log("\n" + ' Datos insertados' + "\n");
-                            
-                            
+                                    // Attributes: [] de Entities: []
+                                    if(typeof element.Attributes !== 'undefined' && element.Attributes != ''){
+                                        element['Attributes'].forEach(Attribute => {
+                                            
+                                            Attributes_Type  =  Attribute.Type;
+                                            Attributes_Score = Attribute.Score;
+                                            Attribute_RelationshipScore = Attribute.RelationshipScore;
+                                            Attribute_Id = Attribute.Id;
+                                            Attribute_BeginOffset = Attribute.BeginOffset;
+                                            Attribute_EndOffset = Attribute.EndOffset;
+                                            Attribute_Text = Attribute.Text;
 
-                        });
-
-                        // esto lo usare para guardarlo en la tabla epicrisis_hospitalizados_unmapped_attributes
-                        if(data['UnmappedAttributes']){
-                            data['UnmappedAttributes'].forEach(UnmappedAttributes => {
-                                unmapped_attributes_type = UnmappedAttributes.Type;
-                                if(UnmappedAttributes.Attribute != ''){
-                                    unmapped_attributes_type2 = UnmappedAttributes.Attribute.Type;
-                                    unmapped_attributes_score = UnmappedAttributes.Attribute.Score;
-                                    unmapped_attributes_id = UnmappedAttributes.Attribute.Id;
-                                    unmapped_attributes_beginoffset = UnmappedAttributes.Attribute.BeginOffset;
-                                    unmapped_attributes_endoffset = UnmappedAttributes.Attribute.EndOffset;
-                                    unmapped_attributes_text = UnmappedAttributes.Attribute.Text;
-                                    unmapped_attributes_traitsname = '';
-                                    unmapped_attributes_traitsscore = null;
-                                    if(UnmappedAttributes.Attribute.Traits != ''){
-                                        UnmappedAttributes.Attribute.Traits.forEach(UATrai => {
-                                            unmapped_attributes_traitsname  =  UATrai.Name;
-                                            unmapped_attributes_traitsscore = UATrai.Score;
-                                            // console.log('UATraits Texto ' + unmapped_attributes_traitsname + "\n");
-                                            // console.log('UATraits Score ' + unmapped_attributes_traitsscore + "\n");
+                                            // Traits: [ ] de Attributes: []
+                                            if(Attribute.Traits != ''){
+                                                Attribute['Traits'].forEach(Trai => {
+                                                    A_traits_name  =  Trai.Name;
+                                                    A_traits_score = Trai.Score;
+                                                });  
+                                            }
                                         });  
                                     }
                                     
-                                }
+                                    //
+                                    // guardo los datos en la tabla
+                                        var response =  pool.query('INSERT INTO epicrisis_hospitalizados_entities (id_entities, begin_offset, end_offset, score, text, category, type, traits_name, traits_score, id_epicrisis_hospitalizados, attributes_type, attributes_score, attribute_relationshipscore, attribute_id, attribute_beginoffset, attribute_endoffset, attribute_text, a_traits_name, a_traits_score  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)',
+                                        [id_entities, begin_offset, end_offset, score, text, category, type, traits_name, traits_score, id_epicrisis_hospitalizados,
+                                            Attributes_Type, Attributes_Score, Attribute_RelationshipScore, Attribute_Id, Attribute_BeginOffset, Attribute_EndOffset, 
+                                            Attribute_Text, A_traits_name, A_traits_score ]);
+                                        console.log("\n" + ' Datos insertados' + "\n");
+                                    
+                                    
+
+                                });
                                 
-                                var response =  pool.query('INSERT INTO epicrisis_hospitalizados_unmapped_attributes (id_epicrisis_hospitalizados, unmapped_attributes_type, unmapped_attributes_type2, unmapped_attributes_score, unmapped_attributes_id, unmapped_attributes_beginoffset, unmapped_attributes_endoffset, unmapped_attributes_text, unmapped_attributes_traitsname, unmapped_attributes_traitsscore  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)', [id_epicrisis_hospitalizados, unmapped_attributes_type, unmapped_attributes_type2, unmapped_attributes_score, unmapped_attributes_id, unmapped_attributes_beginoffset, unmapped_attributes_endoffset, unmapped_attributes_text , unmapped_attributes_traitsname, unmapped_attributes_traitsscore ]);
-                                console.log("\n" + ' Datos insertados' + "\n");
-                            });
+                                // esto lo usare para guardarlo en la tabla epicrisis_hospitalizados_unmapped_attributes
+                                if(data['UnmappedAttributes']){
+                                    data['UnmappedAttributes'].forEach(UnmappedAttributes => {
+                                        unmapped_attributes_type = UnmappedAttributes.Type;
+                                        if(UnmappedAttributes.Attribute != ''){
+                                            unmapped_attributes_type2 = UnmappedAttributes.Attribute.Type;
+                                            unmapped_attributes_score = UnmappedAttributes.Attribute.Score;
+                                            unmapped_attributes_id = UnmappedAttributes.Attribute.Id;
+                                            unmapped_attributes_beginoffset = UnmappedAttributes.Attribute.BeginOffset;
+                                            unmapped_attributes_endoffset = UnmappedAttributes.Attribute.EndOffset;
+                                            unmapped_attributes_text = UnmappedAttributes.Attribute.Text;
+                                            unmapped_attributes_traitsname = '';
+                                            unmapped_attributes_traitsscore = null;
+                                            if(UnmappedAttributes.Attribute.Traits != ''){
+                                                UnmappedAttributes.Attribute.Traits.forEach(UATrai => {
+                                                    unmapped_attributes_traitsname  =  UATrai.Name;
+                                                    unmapped_attributes_traitsscore = UATrai.Score;
+                                                    // console.log('UATraits Texto ' + unmapped_attributes_traitsname + "\n");
+                                                    // console.log('UATraits Score ' + unmapped_attributes_traitsscore + "\n");
+                                                });  
+                                            }
+                                            
+                                        }
+                                        
+                                        var response =  pool.query('INSERT INTO epicrisis_hospitalizados_unmapped_attributes (id_epicrisis_hospitalizados, unmapped_attributes_type, unmapped_attributes_type2, unmapped_attributes_score, unmapped_attributes_id, unmapped_attributes_beginoffset, unmapped_attributes_endoffset, unmapped_attributes_text, unmapped_attributes_traitsname, unmapped_attributes_traitsscore  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)', [id_epicrisis_hospitalizados, unmapped_attributes_type, unmapped_attributes_type2, unmapped_attributes_score, unmapped_attributes_id, unmapped_attributes_beginoffset, unmapped_attributes_endoffset, unmapped_attributes_text , unmapped_attributes_traitsname, unmapped_attributes_traitsscore ]);
+                                        console.log("\n" + ' Datos insertados' + "\n");
+                                    });
+                                }
+
+                            }
+
+                        });
+                        }else{
+                            console.log(' no se ha podido traducir ');
                         }
-
                     }
-
                 });
+                ////////////////////// fin traducir de es a en //////////////////////
+                
             }
         }else{
             //aqui
@@ -298,6 +336,7 @@ const creaEHdetectEntities = async (req, res) => {
     
     // res.send('epicrisis hospitalizados');
 }
+
 
 //exportamos modul(o)s
 module.exports = {
