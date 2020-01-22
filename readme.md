@@ -28,3 +28,5 @@ $ localhost:3000/getEpicrisisHospitalizadosByHospId/{hosp_id}
 $ localhost:3000/creaEHdetectEntities/{hosp_id}
 ```
 
+
+
