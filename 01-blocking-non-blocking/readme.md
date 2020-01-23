@@ -1,4 +1,4 @@
-# Proyectos en node
+# Proyectos en node para entender concepto de Blocking vs Non Blocking I/O
 
 # Pasos para ejecutar el proyecto
 
@@ -11,9 +11,10 @@ $ npm install
 $ npm i nodemon -D (sirve para ver cambios actualizados sin reinicar servidor)
 ```
 
-### Levantar servidor
+### Levantar archivos
 ```sh
-$ npm start
+$ node app-blocking.js
+$ node app-non-blocking.js
 ```
 
 
