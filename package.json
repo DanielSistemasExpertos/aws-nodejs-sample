@@ -1,32 +1,19 @@
 {
   "name": "aws-nodejs-sample",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "version": "0.0.0",
+  "private": true,
   "scripts": {
-    "start": "node index",
-    "dev": "nodemon src/index.js"
+    "start": "node ./bin/www"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/DanielSistemasExpertos/aws-nodejs-sample.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/DanielSistemasExpertos/aws-nodejs-sample/issues"
-  },
-  "homepage": "https://github.com/DanielSistemasExpertos/aws-nodejs-sample#readme",
   "dependencies": {
     "bootstrap": "^4.4.1",
-    "ejs": "^3.0.1",
-    "express": "^4.17.1",
+    "cookie-parser": "~1.4.4",
+    "debug": "~2.6.9",
+    "express": "~4.16.1",
+    "http-errors": "~1.6.3",
     "jquery": "^3.4.1",
-    "pg": "^7.17.1",
-    "utf8": "^3.0.0"
-  },
-  "devDependencies": {
-    "nodemon": "^2.0.2"
+    "morgan": "~1.9.1",
+    "popper.js": "^1.16.1",
+    "pug": "2.0.0-beta11"
   }
 }
